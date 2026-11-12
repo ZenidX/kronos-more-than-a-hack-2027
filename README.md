@@ -1,194 +1,171 @@
-# More than a Hack 2027 — Phase 1: Ball Possession
+# Kronos · More Than A Hack 2027
 
-**Organised by [Metrica Sports](https://metrica-sports.com), [FC Barcelona](https://www.fcbarcelona.com)
-and the [Mobile World Capital Barcelona](https://www.mwcbarcelona.com)**, at the Talent Arena in Barcelona.
+**¿Quién tiene el balón?** Respuesta automática, fotograma a fotograma, a partir del tracking de un partido.
 
-A football data challenge on real professional match data, open to analysts, data scientists and
-engineers. You are given one complete LaLiga match — two camera feeds, automatic tracking of every
-player and the ball, automatic tactical tagging, and the camera-to-pitch geometry — and one
-question to answer with it.
+Equipo **Kronos** · Initial Challenge de [More Than A Hack 2027](https://landing.mobileworldcapital.com/more-than-a-hack-2027) (MWCapital · Talent Arena), reto de [Metrica Sports](https://github.com/metrica-sports/more-than-a-hack-2027).
 
----
+![Kronos sobre un partido de SkillCorner que el ajuste no vio](docs/img/partido.gif)
 
-## The task
+*Partido de SkillCorner open data (licencia MIT) que no se usó para ajustar el modelo. Arriba, el
+tracking: local en rojo, visitante en azul, balón en blanco cuando se detecta. Abajo, lo que dice
+Kronos y la verdad etiquetada. Ninguna imagen de este repositorio sale del partido del reto: las
+normas prohíben publicar datos derivados de él.*
 
-**For every frame of the match, say who has the ball.**
-
-```
-frame,label
-11185,A        away in possession, ball alive
-11186,A
-...
-18240,D        dead ball
-...
-18684,H        home in possession, ball alive
-```
-
-That is the whole task. One CSV, one row per video frame, 199,319 rows. It is scored automatically
-against a private frame-by-frame ground truth, so there is a number at the end and no argument
-about it — no jury, and no presentation to argue from.
-
-The tracking is automatic and uncorrected: it has gaps and identity
-switches, and the ball itself is invisible on 41% of the frames you are scored on.
+> **English summary.** A three-state (home / away / dead ball) hidden Markov model decoded with
+> Viterbi. Evidence per frame: ball proximity, a self-supervised team-shape classifier for the 41 %
+> of frames without a ball, and dead-ball cues. A switching cost keeps possessions whole, which is
+> what `spellF1` rewards. The 12 parameters are tuned **only on other matches** (Metrica sample games
+> and SkillCorner open data) and checked on 10 held-out matches: spellF1 **0.408 → 0.528**. No label
+> from the challenge match is used for training or tuning. Technical document:
+> [`submission/Kronos.md`](submission/Kronos.md).
 
 ---
 
-## The challenge in one screen
+## 1. El problema
 
-| |                                                                                                                           |
-|---|---------------------------------------------------------------------------------------------------------------------------|
-| **Input** | one full match: tactical video, broadcast video, automatic tracking **with the ball** for both, Smart Tagging, homography |
-| **Output** | `frame,label` CSV, 199,319 rows, labels `H` / `A` / `D` / `X`                                                             |
-| **Ranked on** | `spellF1` — how many of the match's real possessions you recovered as whole possessions                                   |
-| **Also reported** | `macroF1` — the per-frame view, and the first tie-break                                                                   |
-| **Baseline to beat** | `spellF1` **0.2433**, in this repository                                                                                  |
-| **Ground truth you get** | the first **5 minutes** of play — to check your pipeline, not to train on                                              |
-| **Ground truth you are scored on** | the full match, **private**                                                                                               |
+Tenemos un partido entero, el Barça-Athletic: 199.319 fotogramas, con la posición de cada jugador y
+del balón 25 veces por segundo. Hay que entregar **una etiqueta por fotograma**:
 
-It is deliberately **not** a tracking challenge. The tracking, tagging and homography are given to
-you so that nobody has to rebuild detection, re-identification and camera calibration before
-getting to the actual question. See [CHALLENGE.md](CHALLENGE.md).
-
----
-
-## Try it right now
-
-The scorer, a 5-minute ground truth and four working baselines are in this repository. No
-enrolment, no download, no data:
-
-```bash
-pip install -r requirements.txt
-python evaluation/run_evaluation.py
-```
-
-Scored on the public 5 minutes, not on the full match -- which is why the order below is not the
-order of the floor quoted above:
-
-```
-scoreboard  gt/BAR-ATH_possession_gt_public.csv  199319 frames  7500 graded  21 gt segments
-ground truth has 17 possessions of mean 14.2 s  <- compare the poss and dur columns
-
-rank  submission                macroF1  spellF1   poss     dur  
-----  ------------------------  -------  -------  -----  ------  
-   1  baseline_smooth125         0.5812   0.4242     16    18.5  
-   2  baseline_smooth50          0.6207   0.3256     26    10.8  
-   3  baseline_smooth25          0.6200   0.2868     36     7.6  
-   4  baseline_raw               0.5972   0.0378    131     2.0  
-```
-
-Those four are **the same algorithm four times** — nearest tracked player to the ball, then a
-majority vote over a window. Only the window changes. `macroF1` barely moves; `spellF1` moves by a
-factor of eleven. That disagreement is the whole point of the metric, and
-[EVALUATION.md](EVALUATION.md) explains it.
-
-Once you have the data, regenerate them yourself and go further:
-
-```bash
-python starter/baseline.py                              # rebuild the four baselines
-python evaluation/validate_submission.py <your>.csv     # before every submission
-```
-
-**Validate every file before you submit it.** `validate_submission.py` runs exactly the checks the
-official scorer runs, and a file that fails them is dropped from the board with a one-line reason.
-It takes two seconds and it is the single most common way a good entry scores nothing.
-
----
-
-## Getting the data
-
-The match assets are released to enrolled participants who have accepted the terms of use.
-
-1. Enrol: **[More than A Hack 2027](https://landing.mobileworldcapital.com/more-than-a-hack-2027)**
-2. Read and sign the terms and conditions in the registration form
-3. You receive a download link.
-4. Unpack it into `./data`, or point `MTAH_DATA_DIR` at wherever you put it.
-
-Full description of every asset and how the frames line up: **[DATA.md](DATA.md)**.
-
----
-
-## Read these, in this order
-
-| | |
+| etiqueta | significado |
 |---|---|
-| **[CHALLENGE.md](CHALLENGE.md)** | the problem, the four labels, what counts as possession |
-| **[DATA.md](DATA.md)** | every provided asset, its format, and the frame alignment |
-| **[EVALUATION.md](EVALUATION.md)** | how you are scored, and why — read before optimising anything |
-| **[SUBMISSION.md](SUBMISSION.md)** | the file contract, the three deliverables, how to submit |
-| **[RULES.md](RULES.md)** | what you may and may not do |
-| **[FAQ.md](FAQ.md)** | |
-| **[OVERVIEW.md](OVERVIEW.md)** | the competition as a whole — context, why the 2027 format changed, the calendar |
+| `H` | posesión del equipo local |
+| `A` | posesión del visitante |
+| `D` | balón parado (fuera, falta, saque…) |
 
+**Las respuestas de ese partido no las tenemos.** Las guarda la organización para ponernos nota.
+Hay dos dificultades:
 
----
+- **El balón no se ve el 41 % del tiempo**, y además en tramos largos (unos 11 s de mediana). El
+  tracking es automático y lo pierde en los momentos más disputados.
+- La nota no premia acertar fotogramas sueltos, sino **acertar posesiones enteras** (`spellF1`): una
+  posesión cortada en dos trozos cuenta como fallo.
 
-## What is in this repository
+## 2. Cómo decide Kronos
 
-```
-games.py                    per-match constants, asset paths and the frame alignment
-evaluation/
-  possession_metrics.py     the metric library — every number on the board is defined here
-  run_evaluation.py         the scorer. This exact file produces the official result
-  validate_submission.py    check a file before you send it
-  gt/                       the public 5-minute ground truth
-  results/                  the four baselines; put your submissions here
-starter/
-  baseline.py               the reference baseline, numpy only
-  load_atd.py               read the tracking and line it up with video frames
-  load_smart_tagging.py     read the tactical tagging as video-frame intervals
-  load_homography.py        read the homography; project pitch <-> pixels
-  utils.py                  pitch plotting for the notebooks
-  01_smart_tagging.ipynb    guided tour of the tactical tagging
-  02_tracking_atd.ipynb     guided tour of the tracking data, with plots
-  03_first_submission.ipynb data in, scored submission out — start here
-data/                       unpack the downloaded match assets here. Empty in a fresh clone
+Kronos es un "árbitro" automático. Para cada fotograma junta tres pistas y después decide el
+partido entero de una vez, no fotograma a fotograma.
+
+```mermaid
+flowchart LR
+    T[Tracking<br/>jugadores + balón] --> P[1 · Cercanía al balón<br/>¿quién lo tiene pegado?]
+    T --> S[2 · Forma de los equipos<br/>¿quién ataca y quién defiende?]
+    T --> D[3 · Balón parado<br/>¿van andando? ¿balón fuera?]
+    ST[Smart Tagging<br/>saques iniciales] --> D
+    P --> V{{Viterbi<br/>con coste por cambiar}}
+    S --> V
+    D --> V
+    V --> O[H / A / D<br/>por fotograma]
 ```
 
-The scorer you run locally is the scorer that decides the competition. If it scores on your
-machine, it scores the same way on ours.
+1. **Cercanía al balón.** Si un jugador del local está a menos de ~2 m del balón y el rival más
+   lejos, apunta a posesión local. Si el balón va por el aire lejos de todos, esta pista calla.
+2. **Forma de los equipos.** Sirve cuando no se ve el balón. El equipo que ataca se abre y se
+   adelanta; el que defiende se encoge y retrocede. Un clasificador aprende esa diferencia **sin que
+   nadie le dé respuestas**: se entrena con los momentos en que el tracking ve claramente quién lleva
+   el balón (un jugador pegado a él y el rival lejos). Aprende en una parte del partido y predice la
+   otra.
+3. **Balón parado.** En las paradas los jugadores van andando, el balón sale del campo o el partido
+   aún no ha empezado.
 
----
+Así se ven las tres pistas en 150 segundos de un partido reservado:
 
-## Requirements
+![Las tres señales y la decisión final](docs/img/senales.png)
 
-**Python 3.8 or newer.** The evaluation needs `numpy` and `pandas` and nothing else; it is tested
-under 3.8 and 3.11 and produces identical output under both. `starter/baseline.py` needs nothing
-more either — you can reach a scored submission without installing anything else.
+### La clave: cambiar de posesión "cuesta"
 
-The notebooks additionally want `kloppy` and `matplotlib` (`requirements-starter.txt`), and
-**Python 3.9+ is recommended for those**: on Windows, installing Jupyter under 3.8 hits a
-`pywinpty` build failure that has nothing to do with this repository.
+Si decidimos cada fotograma por separado (barra *fotograma a fotograma*), la etiqueta parpadea
+continuamente: un toque, un rebote, un pase que pasa cerca de un rival… y cada parpadeo crea una
+posesión falsa. Kronos usa el **algoritmo de Viterbi**: busca la secuencia de etiquetas que mejor
+explica todas las pistas, pagando un precio fijo cada vez que cambia de estado. El resultado
+cambia de posesión solo cuando la evidencia es clara y sostenida, que es lo que el reto llama
+*posesión controlada*. Además, un balón suelto sigue siendo del último equipo que lo tenía.
 
----
+Ejemplo sintético con la métrica oficial: casi las mismas etiquetas fotograma a fotograma, pero
+nota de posesiones 0 frente a 1.
 
-## Timeline
+![Por qué el coste de cambio importa](docs/img/coste_de_cambio.png)
 
-| |                |
-|---|----------------|
-| registration opens | **October 1, 2026** |
-| data released | **October 20, 2026** |
-| submission deadline | **November 17, 2026** |
-| results announced | **Before November 26, 2026**      |
+## 3. Qué significa "ajustar" el modelo
 
----
+La lógica de arriba la hemos diseñado nosotros, pero tiene **12 números que hay que decidir**: a
+cuántos metros cuenta que alguien controla el balón, cuánto cuesta cambiar de posesión, a qué
+velocidad media se considera que el juego está parado…
 
-## Questions
+No podemos elegirlos mirando las respuestas del partido del reto, porque no las tenemos. Y aunque
+los 5 minutos públicos sí las traen, las normas solo permiten usarlos para comprobar que el fichero
+está bien hecho. Así que **practicamos con partidos de otros equipos que sí vienen resueltos**, igual
+que se prepara un examen con exámenes de otros años:
 
-Open an issue for anything about the data, the metrics or the documentation — corrections are
-genuinely useful, and a fix that helps you helps everyone equally. For enrolment and the terms of
-use: **hackathon.talentarena@mobileworldcapital.com**.
+| fuente | partidos | de dónde sale la "verdad" |
+|---|---|---|
+| [Metrica Sports sample data](https://github.com/metrica-sports/sample-data) | 2 | eventos anotados (pases, recuperaciones, saques). Su tracking es limpio, así que lo **estropeamos a propósito** para que se parezca al del reto: huecos largos de balón, jugadores perdidos, ruido |
+| [SkillCorner open data](https://github.com/SkillCorner/opendata) | 20 | fases de juego (qué equipo tiene la posesión en cada tramo). Su tracking sale de la retransmisión de TV: **el ruido es real** |
 
-## Licence and citation
+El proceso:
 
-The code and documentation in this repository are released under the MIT Licence — see
-[LICENSE](LICENSE). **The match data is not covered by it**: it is separately licensed for this
-competition only, under the terms you accept at enrolment.
+1. Pasamos Kronos por esos partidos con una combinación de los 12 números y lo puntuamos con **el
+   mismo script de evaluación oficial** del reto.
+2. Probamos unos cientos de combinaciones (búsqueda aleatoria más refinamiento local, con semilla
+   fija) y nos quedamos con la mejor.
+3. **Diez partidos de SkillCorner se guardan aparte** y solo se puntúan al final, para comprobar que
+   el modelo funciona con partidos nuevos y no se ha aprendido de memoria los que ya conocía.
 
-```bibtex
-@misc{mtah2027,
-  title  = {More than a Hack 2027: Phase 1 - Ball Possession},
-  author = {Metrica Sports and FC Barcelona Innovation Hub},
-  year   = {2027},
-  url    = {https://github.com/metrica-sports/more-than-a-hack-2027}
-}
+![Resultado en los 10 partidos reservados](docs/img/ajuste_reservados.png)
+
+Los valores ajustados ganan en los 10 partidos reservados, uno por uno. Con esos números fijados,
+Kronos se pasa por el partido del reto y sale `submission/Kronos.csv`.
+
+## 4. Lo que no hacemos
+
+- **No etiquetamos nada a mano** del partido del reto, ni para entrenar ni para validar.
+- **No usamos sus 5 minutos públicos para elegir parámetros**, solo para comprobar que el fichero y
+  la alineación están bien.
+- **No usamos datos humanos sobre ese partido** (eventos de Opta, StatsBomb, etc.).
+- **Los datos del partido no están en este repositorio**: `data/` está en `.gitignore`.
+
+## 5. Resultados
+
+| | spellF1 |
+|---|---|
+| baseline publicado por la organización (partido completo) | 0.2433 |
+| Kronos en 10 partidos externos reservados | **0.528** (media; rango 0.46–0.59) |
+
+La nota real solo la conoce la organización. Sus 5 minutos públicos (17 posesiones) no sirven para
+predecirla, como explica [`EVALUATION.md`](EVALUATION.md).
+
+## 6. Reproducir
+
+```bash
+pip install -r requirements.txt scikit-learn==1.9.1 scipy matplotlib
+# datos del reto descomprimidos en data/tactical/ (ver DATA.md)
+python -m kronos.run                                   # -> submission/Kronos.csv
+python evaluation/validate_submission.py submission/Kronos.csv
+
+# opcional: volver a ajustar y regenerar las figuras
+git clone --depth 1 https://github.com/metrica-sports/sample-data external/sample-data
+git clone --depth 1 https://github.com/SkillCorner/opendata external/skillcorner     # usa git-lfs
+python -m kronos.tune --trials 100                     # -> kronos/params.json
+python -m kronos.figures                               # -> docs/img/
 ```
+
+Determinista: el clasificador y la búsqueda llevan semilla, así que los mismos datos dan el mismo
+fichero.
+
+## 7. Estructura
+
+| ruta | qué hay |
+|---|---|
+| `kronos/load.py` | lee el tracking del reto y lo pasa a arrays en metros |
+| `kronos/features.py` | cercanía al balón, forma de los equipos, saques iniciales |
+| `kronos/model.py` | las tres pistas, el clasificador autoentrenado y Viterbi |
+| `kronos/run.py` | genera la entrega |
+| `kronos/external.py` · `kronos/skillcorner.py` | partidos externos: carga, "verdad" y ruido |
+| `kronos/tune.py` · `kronos/params.json` | ajuste y parámetros elegidos, con su procedencia |
+| `kronos/figures.py` · `docs/img/` | las figuras de este README |
+| `submission/` | `Kronos.csv` y el documento técnico `Kronos.md` |
+| `docs/CHALLENGE_README.md` y `*.md` de la raíz | documentación original del reto (Metrica) |
+
+## Créditos
+
+- Reto, datos del partido y evaluación: [Metrica Sports](https://github.com/metrica-sports/more-than-a-hack-2027) (código MIT; los datos del partido tienen licencia solo para la competición).
+- Partidos externos: [Metrica Sports sample data](https://github.com/metrica-sports/sample-data) y [SkillCorner open data](https://github.com/SkillCorner/opendata) (MIT).
