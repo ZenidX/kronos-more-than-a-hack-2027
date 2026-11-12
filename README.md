@@ -133,6 +133,8 @@ Kronos se pasa por el partido del reto y sale `submission/Kronos.csv`.
 La nota real solo la conoce la organización. Sus 5 minutos públicos (17 posesiones) no sirven para
 predecirla, como explica [`EVALUATION.md`](EVALUATION.md).
 
+**Qué falta y cómo colaborar:** [`docs/PLAN.md`](docs/PLAN.md).
+
 ## 6. Reproducir
 
 ```bash
@@ -163,6 +165,7 @@ fichero.
 | `kronos/tune.py` · `kronos/params.json` | ajuste y parámetros elegidos, con su procedencia |
 | `kronos/figures.py` · `docs/img/` | las figuras de este README |
 | `submission/` | `Kronos.csv` y el documento técnico `Kronos.md` |
+| `docs/PLAN.md` | **qué falta**: entrega, mejoras pendientes y normas |
 | `docs/CHALLENGE_README.md` y `*.md` de la raíz | documentación original del reto (Metrica) |
 
 ## Créditos
