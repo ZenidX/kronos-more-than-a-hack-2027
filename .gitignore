@@ -62,3 +62,8 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# Kronos: local exploration and scored copies
+scratch/
+evaluation/results/kronos_*.csv
+external/

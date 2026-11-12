@@ -1,0 +1,50 @@
+{
+  "source": "kronos.tune on Metrica public sample games 1-2, degraded, seeds 0-1",
+  "objective_spell_f1_mean": 0.4351,
+  "trials": 80,
+  "seed": 0,
+  "per_game": [
+    {
+      "name": "game1_s0",
+      "spell_f1": 0.43910256410256415,
+      "macro_f1": 0.7623254530743043,
+      "n_pred": 245,
+      "n_gt": 379
+    },
+    {
+      "name": "game1_s1",
+      "spell_f1": 0.4338658146964856,
+      "macro_f1": 0.7648759679398788,
+      "n_pred": 247,
+      "n_gt": 379
+    },
+    {
+      "name": "game2_s0",
+      "spell_f1": 0.43254237288135594,
+      "macro_f1": 0.7498773984636227,
+      "n_pred": 232,
+      "n_gt": 358
+    },
+    {
+      "name": "game2_s1",
+      "spell_f1": 0.43481228668941974,
+      "macro_f1": 0.7563760447374577,
+      "n_pred": 228,
+      "n_gt": 358
+    }
+  ],
+  "params": {
+    "control_radius": 2.4261,
+    "proximity_scale": 1.4087,
+    "proximity_weight": 1.0586,
+    "shape_weight_ball": 0.0856,
+    "shape_weight_noball": 0.0969,
+    "speed_ref": 1.9169,
+    "speed_weight": 0.7166,
+    "ball_fast": 3.0,
+    "ball_fast_weight": 0.6238,
+    "out_weight": 10.0,
+    "switch_team": 11.0687,
+    "switch_dead": 11.6264
+  }
+}
