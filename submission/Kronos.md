@@ -52,15 +52,30 @@ the last two seconds (play is live), the ball outside the pitch lines, and the S
 
 - **No labels on the provided game**, from anyone. The public 5-minute ground truth was used only
   to check that the pipeline is correct (alignment, file format), never to choose parameters.
-- **Parameter tuning on other games:** Metrica Sports' public sample games 1 and 2
-  (github.com/metrica-sports/sample-data, human-annotated events by Metrica). We convert their
-  events into frame labels with the challenge's semantics (`kronos/external.py`: owning team from
-  on-ball events, dead from ball-out / foul until the restart), **degrade their clean tracking** to
-  resemble the automatic tracking (ball dropouts in long runs matching the challenge's statistics,
-  player dropouts, position noise), and maximise the official `spellF1` by seeded random search
-  (`kronos/tune.py`). The chosen values and their provenance are in `kronos/params.json`.
-  Mean spellF1 on the four degraded external game-seeds: **0.355 with the hand-set priors →
-  0.435 tuned** (per game-seed 0.433–0.439, so the gain is not carried by one match).
+- **Parameter tuning on other games only**, maximising the official `spellF1` by seeded random
+  search plus local refinement (`kronos/tune.py`); values and provenance in `kronos/params.json`.
+  Two public sources:
+  - **Metrica Sports sample games 1–2** (github.com/metrica-sports/sample-data; events annotated
+    by Metrica). Events → frame labels with the challenge's semantics (`kronos/external.py`:
+    owning team from on-ball events, dead from ball-out / foul until the restart). Their clean
+    tracking is **degraded** to resemble the automatic tracking (ball dropouts in long runs
+    matching the challenge's statistics, player dropouts, position noise), two seeds each.
+  - **SkillCorner open data**, 20 A-League 2024-25 matches (github.com/SkillCorner/opendata),
+    broadcast tracking whose ball is detected on ~60 % of frames — real, not simulated, noise.
+    Labels from SkillCorner's phases of play: team in possession per phase, gaps between phases
+    as stoppages (`kronos/skillcorner.py`; 10 fps resampled to 25 fps).
+  - 10 SkillCorner matches + the Metrica games are used for tuning; **the other 10 SkillCorner
+    matches are held out** and only scored at the end.
+
+  | | tuning set (14) | **held-out SkillCorner (10)** |
+  |---|---|---|
+  | hand-set priors | 0.389 | 0.408 |
+  | tuned on Metrica only | 0.452 | 0.438 |
+  | **tuned on Metrica + SkillCorner (submitted)** | **0.502** | **0.528** |
+
+  The submitted parameters beat the Metrica-only ones on each of the 10 held-out matches. They
+  are worse on the two degraded Metrica games (≈0.38 vs 0.435); we prefer the real broadcast noise
+  and the unseen matches as the better proxy.
 - The team-shape classifier is trained only on algorithmic pseudo-labels (section 2).
 
 ## 5. Possession rules implemented
@@ -74,9 +89,9 @@ the last two seconds (play is live), the ball outside the pitch lines, and the S
 
 ## 6. Limitations
 
-- External tuning data come from different matches, cameras and tracking quality, and their labels
-  are derived from events rather than from corrected tracking; the degradation model is an
-  approximation of the real ATD noise.
+- External tuning data come from different matches, leagues, cameras and tracking quality, and
+  their labels come from events or phases of play rather than from corrected tracking, so the
+  exact boundary conventions differ from the challenge's ground truth.
 - Throw-ins and short stoppages with high player speed are hard to separate from live play.
 - Long ball dropouts during transitions: the shape classifier reacts with a delay.
 - Next steps: use the video/homography to recover the ball where the tracking loses it; use Smart
@@ -91,7 +106,8 @@ python -m kronos.run                      # -> submission/Kronos.csv
 python evaluation/validate_submission.py submission/Kronos.csv
 # optional: re-tune on the external games
 git clone --depth 1 https://github.com/metrica-sports/sample-data external/sample-data
-python -m kronos.tune --trials 80         # -> kronos/params.json
+git clone --depth 1 https://github.com/SkillCorner/opendata external/skillcorner   # git-lfs
+python -m kronos.tune --trials 100        # -> kronos/params.json
 ```
 
 Deterministic: the classifier and the search are seeded; the same data produce the same file.

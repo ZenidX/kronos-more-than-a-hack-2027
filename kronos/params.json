@@ -1,50 +1,134 @@
 {
-  "source": "kronos.tune on Metrica public sample games 1-2, degraded, seeds 0-1",
-  "objective_spell_f1_mean": 0.4351,
-  "trials": 80,
+  "source": "kronos.tune on Metrica sample games 1-2 (degraded, seeds 0-1) and SkillCorner open data matches 1874553,1899585,1927964,1959846,1996435,2006229,2007448,2010085,2013725,2016236",
+  "objective_spell_f1_mean": 0.5015,
+  "heldout_matches": [
+    "1886347",
+    "1925299",
+    "1953632",
+    "1986691",
+    "1996436",
+    "2006363",
+    "2007721",
+    "2011166",
+    "2015213",
+    "2017461"
+  ],
+  "heldout_spell_f1_priors": 0.4084,
+  "heldout_spell_f1_tuned": 0.5276,
+  "trials": 100,
   "seed": 0,
   "per_game": [
     {
       "name": "game1_s0",
-      "spell_f1": 0.43910256410256415,
-      "macro_f1": 0.7623254530743043,
-      "n_pred": 245,
+      "spell_f1": 0.3707664884135472,
+      "macro_f1": 0.7183629925928221,
+      "n_pred": 182,
       "n_gt": 379
     },
     {
       "name": "game1_s1",
-      "spell_f1": 0.4338658146964856,
-      "macro_f1": 0.7648759679398788,
-      "n_pred": 247,
+      "spell_f1": 0.3818181818181818,
+      "macro_f1": 0.7137457355034798,
+      "n_pred": 193,
       "n_gt": 379
     },
     {
       "name": "game2_s0",
-      "spell_f1": 0.43254237288135594,
-      "macro_f1": 0.7498773984636227,
-      "n_pred": 232,
+      "spell_f1": 0.4007421150278293,
+      "macro_f1": 0.7159665559420296,
+      "n_pred": 181,
       "n_gt": 358
     },
     {
       "name": "game2_s1",
-      "spell_f1": 0.43481228668941974,
-      "macro_f1": 0.7563760447374577,
-      "n_pred": 228,
+      "spell_f1": 0.381549815498155,
+      "macro_f1": 0.7251812230793648,
+      "n_pred": 184,
       "n_gt": 358
+    },
+    {
+      "name": "sc1874553",
+      "spell_f1": 0.5572938689217759,
+      "macro_f1": 0.8286205100981451,
+      "n_pred": 223,
+      "n_gt": 250
+    },
+    {
+      "name": "sc1899585",
+      "spell_f1": 0.5359683794466402,
+      "macro_f1": 0.7913648331468542,
+      "n_pred": 228,
+      "n_gt": 278
+    },
+    {
+      "name": "sc1927964",
+      "spell_f1": 0.6701030927835052,
+      "macro_f1": 0.885852643647037,
+      "n_pred": 183,
+      "n_gt": 205
+    },
+    {
+      "name": "sc1959846",
+      "spell_f1": 0.4994219653179191,
+      "macro_f1": 0.8221441361657508,
+      "n_pred": 236,
+      "n_gt": 283
+    },
+    {
+      "name": "sc1996435",
+      "spell_f1": 0.588962472406181,
+      "macro_f1": 0.8484848756162022,
+      "n_pred": 219,
+      "n_gt": 234
+    },
+    {
+      "name": "sc2006229",
+      "spell_f1": 0.5758241758241758,
+      "macro_f1": 0.8070156557069477,
+      "n_pred": 211,
+      "n_gt": 244
+    },
+    {
+      "name": "sc2007448",
+      "spell_f1": 0.5515011547344111,
+      "macro_f1": 0.8312850225373921,
+      "n_pred": 207,
+      "n_gt": 226
+    },
+    {
+      "name": "sc2010085",
+      "spell_f1": 0.4757281553398059,
+      "macro_f1": 0.8025606246218145,
+      "n_pred": 180,
+      "n_gt": 232
+    },
+    {
+      "name": "sc2013725",
+      "spell_f1": 0.5260945709281962,
+      "macro_f1": 0.7977861622320779,
+      "n_pred": 266,
+      "n_gt": 305
+    },
+    {
+      "name": "sc2016236",
+      "spell_f1": 0.5054481546572935,
+      "macro_f1": 0.8096218036982236,
+      "n_pred": 269,
+      "n_gt": 300
     }
   ],
   "params": {
-    "control_radius": 2.4261,
-    "proximity_scale": 1.4087,
-    "proximity_weight": 1.0586,
-    "shape_weight_ball": 0.0856,
-    "shape_weight_noball": 0.0969,
-    "speed_ref": 1.9169,
-    "speed_weight": 0.7166,
-    "ball_fast": 3.0,
-    "ball_fast_weight": 0.6238,
-    "out_weight": 10.0,
-    "switch_team": 11.0687,
-    "switch_dead": 11.6264
+    "control_radius": 1.8984,
+    "proximity_scale": 0.5715,
+    "proximity_weight": 0.6373,
+    "shape_weight_ball": 0.035,
+    "shape_weight_noball": 0.0,
+    "speed_ref": 1.8719,
+    "speed_weight": 0.9637,
+    "ball_fast": 4.4717,
+    "ball_fast_weight": 0.7005,
+    "out_weight": 6.9316,
+    "switch_team": 6.6976,
+    "switch_dead": 24.4994
   }
 }

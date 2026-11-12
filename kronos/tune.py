@@ -21,6 +21,7 @@ import numpy as np
 from kronos import model as M
 from kronos.external import LENGTH, WIDTH, build_game, score
 from kronos.run import PARAMS_FILE, finish, prepare
+from kronos.skillcorner import build_match, match_ids
 
 SEARCH = {  # name: (low, high, log-scale?)
     "control_radius": (0.8, 2.5, False),
@@ -53,6 +54,12 @@ def objective(preps, params):
     return float(np.mean([r[1] for r in rows])), rows
 
 
+def _prep_sc(mid):
+    g = build_match(mid)
+    return (g["name"], prepare(g["players"], g["ball"], g["team"], g["length"], g["width"],
+                               g["halves"]), g["gt"])
+
+
 def main(trials, seed):
     t0 = time.time()
     preps = []
@@ -61,12 +68,24 @@ def main(trials, seed):
             g = build_game(k, seed=s)
             preps.append((g["name"], prepare(g["players"], g["ball"], g["team"], LENGTH, WIDTH,
                                              g["halves"]), g["gt"]))
-    print("prepared %d game-seeds in %.0fs" % (len(preps), time.time() - t0))
+    ids = match_ids()
+    tune_ids, hold_ids = ids[0::2], ids[1::2]   # alternate: 10 to tune, 10 held out
+    preps += [_prep_sc(m) for m in tune_ids]
+    holdout = [_prep_sc(m) for m in hold_ids]
+    print("prepared %d tuning + %d held-out matches in %.0fs" % (len(preps), len(holdout),
+                                                                 time.time() - t0))
 
     base = {k: M.PARAMS[k] for k in SEARCH}
     best_val, best_rows = objective(preps, base)
     best = base
     print("priors      spellF1 %.4f" % best_val)
+    if os.path.exists(PARAMS_FILE):
+        with open(PARAMS_FILE) as fh:
+            prev = {k: v for k, v in json.load(fh)["params"].items() if k in SEARCH}
+        val, rows = objective(preps, dict(base, **prev))
+        print("previous    spellF1 %.4f" % val)
+        if val > best_val:
+            best, best_val, best_rows = dict(base, **prev), val, rows
     rng = np.random.default_rng(seed)
     for t in range(trials):
         cand = sample(rng)
@@ -87,9 +106,16 @@ def main(trials, seed):
 
     for r in best_rows:
         print("  %-10s spellF1 %.4f  macroF1 %.4f  poss %d vs gt %d" % r)
+    base_hold, _ = objective(holdout, base)
+    best_hold, hold_rows = objective(holdout, best)
+    print("held-out SkillCorner: priors %.4f -> tuned %.4f" % (base_hold, best_hold))
     with open(PARAMS_FILE, "w") as fh:
-        json.dump({"source": "kronos.tune on Metrica public sample games 1-2, degraded, seeds 0-1",
+        json.dump({"source": "kronos.tune on Metrica sample games 1-2 (degraded, seeds 0-1) "
+                             "and SkillCorner open data matches %s" % ",".join(tune_ids),
                    "objective_spell_f1_mean": round(best_val, 4),
+                   "heldout_matches": hold_ids,
+                   "heldout_spell_f1_priors": round(base_hold, 4),
+                   "heldout_spell_f1_tuned": round(best_hold, 4),
                    "trials": trials, "seed": seed,
                    "per_game": [dict(zip(("name", "spell_f1", "macro_f1", "n_pred", "n_gt"), r))
                                 for r in best_rows],

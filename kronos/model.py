@@ -104,20 +104,48 @@ def dead_evidence(mean_speed, ball, ball_raw_present, length, width, tag_dead, p
 
 def viterbi(E, switch_team, switch_dead):
     """Max-sum decoding over 3 states. E is (n, 3) log-emissions."""
+    # Plain-Python inner loop: with three states, scalar float arithmetic is several times
+    # faster than tiny numpy operations per frame. Ties resolve to the lower state index.
     n = len(E)
-    T = np.array([[0, -switch_team, -switch_dead],
-                  [-switch_team, 0, -switch_dead],
-                  [-switch_dead, -switch_dead, 0]], dtype=np.float64)
-    score = E[0].astype(np.float64).copy()
-    back = np.zeros((n, 3), dtype=np.int8)
+    e0, e1, e2 = (E[:, k].astype(float).tolist() for k in range(3))
+    st, sd = float(switch_team), float(switch_dead)
+    back = bytearray(3 * n)
+    s0, s1, s2 = e0[0], e1[0], e2[0]
     for t in range(1, n):
-        cand = score[:, None] + T          # from (rows) -> to (cols)
-        back[t] = np.argmax(cand, axis=0)
-        score = cand[back[t], np.arange(3)] + E[t]
+        # to H
+        a, b, c = s0, s1 - st, s2 - sd
+        if a >= b and a >= c:
+            n0, b0 = a, 0
+        elif b >= c:
+            n0, b0 = b, 1
+        else:
+            n0, b0 = c, 2
+        # to A
+        a, b, c = s0 - st, s1, s2 - sd
+        if a >= b and a >= c:
+            n1, b1 = a, 0
+        elif b >= c:
+            n1, b1 = b, 1
+        else:
+            n1, b1 = c, 2
+        # to D
+        a, b, c = s0 - sd, s1 - sd, s2
+        if a >= b and a >= c:
+            n2, b2 = a, 0
+        elif b >= c:
+            n2, b2 = b, 1
+        else:
+            n2, b2 = c, 2
+        i = 3 * t
+        back[i], back[i + 1], back[i + 2] = b0, b1, b2
+        s0, s1, s2 = n0 + e0[t], n1 + e1[t], n2 + e2[t]
     path = np.zeros(n, dtype=np.int8)
-    path[-1] = int(np.argmax(score))
+    last = [s0, s1, s2]
+    k = max(range(3), key=lambda j: (last[j], -j))
+    path[-1] = k
     for t in range(n - 1, 0, -1):
-        path[t - 1] = back[t, path[t]]
+        k = back[3 * t + k]
+        path[t - 1] = k
     return path
 
 
