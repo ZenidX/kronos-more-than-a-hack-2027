@@ -6,8 +6,11 @@ Entrega del Initial Challenge: **17-11-2026, 23:59 (CET)**. El formulario llega 
 
 - [ ] **Equipo**: todos los miembros registrados con el nombre «Kronos» (mínimo 3 para pasar de fase).
 - [ ] **Formulario** (cuenta de Google): nombre del equipo, `Kronos.csv`, URL del repositorio, `Kronos.pdf`.
+- [ ] **Regenerar el CSV con el entorno fijado** (`requirements-kronos.txt`, Python 3.12) y comprobarlo con
+      `python -m kronos.check`. El CSV actual se generó en otro entorno; si cambia, se sube el nuevo.
 - [ ] **Validar el fichero exacto que se sube**: `python evaluation/validate_submission.py submission/Kronos.csv`.
-- [ ] **Documento técnico en PDF** a partir de [`submission/Kronos.md`](../submission/Kronos.md), con las figuras.
+- [x] **Documento técnico en PDF** a partir de [`submission/Kronos.md`](../submission/Kronos.md), con las figuras
+      (`submission/Kronos.pdf`, fuera de git por `*.pdf`; regenerarlo si cambia el `.md`).
 - [ ] **Repositorio público** antes de enviar, revisando antes todo el historial: ningún dato del partido
       (`data/` está en `.gitignore`) ni nada derivado de él.
 

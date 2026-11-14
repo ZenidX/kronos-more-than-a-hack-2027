@@ -137,11 +137,17 @@ predecirla, como explica [`EVALUATION.md`](EVALUATION.md).
 
 ## 6. Reproducir
 
+Python **3.12** y las versiones exactas de `requirements-kronos.txt` (el clasificador de
+scikit-learn puede dar otro resultado con otra versión, y la norma exige el mismo fichero).
+
 ```bash
-pip install -r requirements.txt scikit-learn==1.9.1 scipy matplotlib
+py -3.12 -m venv .venv                                 # Linux/macOS: python3.12 -m venv .venv
+.venv/Scripts/activate                                 # Linux/macOS: source .venv/bin/activate
+pip install -r requirements-kronos.txt
 # datos del reto descomprimidos en data/tactical/ (ver DATA.md)
 python -m kronos.run                                   # -> submission/Kronos.csv
 python evaluation/validate_submission.py submission/Kronos.csv
+python -m kronos.check                                 # regenera y compara byte a byte
 
 # opcional: volver a ajustar y regenerar las figuras
 git clone --depth 1 https://github.com/metrica-sports/sample-data external/sample-data
@@ -150,8 +156,8 @@ python -m kronos.tune --trials 100                     # -> kronos/params.json
 python -m kronos.figures                               # -> docs/img/
 ```
 
-Determinista: el clasificador y la búsqueda llevan semilla, así que los mismos datos dan el mismo
-fichero.
+Determinista: el clasificador y la búsqueda llevan semilla, así que los mismos datos y las mismas
+versiones dan el mismo fichero.
 
 ## 7. Estructura
 
@@ -160,7 +166,7 @@ fichero.
 | `kronos/load.py` | lee el tracking del reto y lo pasa a arrays en metros |
 | `kronos/features.py` | cercanía al balón, forma de los equipos, saques iniciales |
 | `kronos/model.py` | las tres pistas, el clasificador autoentrenado y Viterbi |
-| `kronos/run.py` | genera la entrega |
+| `kronos/run.py` · `kronos/check.py` | genera la entrega · comprueba que se regenera idéntica |
 | `kronos/external.py` · `kronos/skillcorner.py` | partidos externos: carga, "verdad" y ruido |
 | `kronos/tune.py` · `kronos/params.json` | ajuste y parámetros elegidos, con su procedencia |
 | `kronos/figures.py` · `docs/img/` | las figuras de este README |

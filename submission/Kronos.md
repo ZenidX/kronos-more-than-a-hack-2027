@@ -19,6 +19,11 @@ precision for fewer flickers (the baselines show it), whereas a switching cost r
 without blurring the boundaries of a real change. It is also transparent: every constant has a
 physical meaning.
 
+![Switching cost](../docs/img/coste_de_cambio.png)
+
+*Synthetic example scored with the official metric: almost the same per-frame labels, but spellF1
+0 without a switching cost and 1 with it.*
+
 ## 2. Evidence
 
 **Ball proximity (H vs A).** For each frame, the nearest tracked player of each team to the ball
@@ -38,6 +43,11 @@ algorithmic pseudo-labels on the provided game).
 **Dead ball (D vs alive).** Mean player speed (players walk during stoppages), a fast-moving ball in
 the last two seconds (play is live), the ball outside the pitch lines, and the Smart Tagging's
 `Kick Off (Start)` tags (everything from the start of a graded half to its kickoff is dead).
+
+![The three signals and the decoded labels](../docs/img/senales.png)
+
+*150 s of a held-out SkillCorner match: the three signals and Kronos' decision against the labels.
+No figure in this document comes from the challenge match.*
 
 ## 3. Assets used and dropped
 
@@ -76,7 +86,12 @@ the last two seconds (play is live), the ball outside the pitch lines, and the S
   The submitted parameters beat the Metrica-only ones on each of the 10 held-out matches. They
   are worse on the two degraded Metrica games (≈0.38 vs 0.435); we prefer the real broadcast noise
   and the unseen matches as the better proxy.
+
 - The team-shape classifier is trained only on algorithmic pseudo-labels (section 2).
+
+![Held-out results](../docs/img/ajuste_reservados.png)
+
+*spellF1 on the 10 held-out SkillCorner matches, priors vs tuned parameters.*
 
 ## 5. Possession rules implemented
 
@@ -99,15 +114,22 @@ the last two seconds (play is live), the ball outside the pitch lines, and the S
 
 ## 7. Reproduction
 
+Python **3.12** with the exact versions in `requirements-kronos.txt` (the scikit-learn classifier
+may give different output under other versions).
+
 ```bash
-pip install -r requirements.txt scikit-learn==1.9.1 scipy
+python3.12 -m venv .venv && source .venv/bin/activate   # Windows: py -3.12 -m venv .venv; .venv/Scripts/activate
+pip install -r requirements-kronos.txt
 # data unpacked into data/tactical/ as described in DATA.md
 python -m kronos.run                      # -> submission/Kronos.csv
 python evaluation/validate_submission.py submission/Kronos.csv
+python -m kronos.check                    # regenerates and compares byte for byte with the committed file
 # optional: re-tune on the external games
 git clone --depth 1 https://github.com/metrica-sports/sample-data external/sample-data
 git clone --depth 1 https://github.com/SkillCorner/opendata external/skillcorner   # git-lfs
 python -m kronos.tune --trials 100        # -> kronos/params.json
+python -m kronos.figures                  # -> docs/img/
 ```
 
-Deterministic: the classifier and the search are seeded; the same data produce the same file.
+Deterministic: the classifier and the search are seeded; the same data and the same package
+versions produce the same file.
